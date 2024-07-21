@@ -27,12 +27,14 @@ Ouvrez le projet avec intellij
 Il va automatiquement télécharger tous les packages nécessaires
 
 Configurez le path de jdk-11 
+
 ![image](https://github.com/user-attachments/assets/437b29c4-5f51-4b24-9c67-a004c50efaef)
-![image](https://github.com/user-attachments/assets/4be78789-6678-4216-bd4a-91f86e42f26e)
+![image](https://github.com/user-attachments/assets/59117f69-1409-4923-8dd0-fb93f6eb6fdf)
+
 
 Configurez les consoles d'exécution pour le Producer et le Consumer
-![image](https://github.com/user-attachments/assets/f3d77a9d-718b-4287-9a6e-402053b0e499)
-![image](https://github.com/user-attachments/assets/58006764-d77c-4d38-b2ea-9db44dbb78ab)
+![image](https://github.com/user-attachments/assets/3c1d1f02-0861-4dcc-9ca8-7664a73a2728)
+![image](https://github.com/user-attachments/assets/ae983811-1bb3-42f9-9f0d-e308132f9380)
 
 Test du Producer :
 
@@ -129,7 +131,7 @@ Test Consumer:
 
 Exécutez le Producer puis le Consumer
 
-Vous devriez voir plein de fichier se créer quand vous recharger cette page
+Vous devriez voir plein de fichiers se créer quand vous rechargez cette page
 http://localhost:9870/explorer.html#/user/sparkStreaming/output
 
 
