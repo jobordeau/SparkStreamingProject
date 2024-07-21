@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: io.delta:delta-storage:3.2.0:jar" external-system-id="SBT">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/io.delta/delta-storage/jars/delta-storage-3.2.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/io.delta/delta-storage/srcs/delta-storage-3.2.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
