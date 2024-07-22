@@ -20,6 +20,10 @@ Ouvrez une autre invite de commande en tant qu'administrateur
 cd C:\kafka_2.12-3.7.1\
 bin\windows\kafka-server-start.bat config\server.properties
 
+Créez le topic Kafka :
+Ouvrez une autre invite de commande en tant qu'administrateur.
+bin\windows\kafka-topics.bat --create --topic sparkStreaming --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1
+
 Configuration de l'IDE
 
 Ouvrez le projet avec IntelliJ.
@@ -36,9 +40,7 @@ Configurez les consoles d'exécution pour le Producer et le Consumer.
 
 Test du Producer :
 
-Créez le topic Kafka :
-Ouvrez une autre invite de commande en tant qu'administrateur.
-bin\windows\kafka-topics.bat --create --topic sparkStreaming --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1
+bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic sparkStreaming --from-beginning
 Cette console affichera les messages reçus par Kafka.
 
 Lancez l'exécution du Producer.
@@ -129,4 +131,4 @@ Ouvrez une invite de commande en tant qu'administrateur.
 pip install pyspark delta-spark pandas streamlit
 
 Dans le dossier src du projet, lancez cette commande :
-pip install pyspark delta-spark pandas setuptools streamlit
+python -m streamlit run dashboard.py
