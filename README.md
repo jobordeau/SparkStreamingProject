@@ -107,16 +107,6 @@ drwxr-xr-x   - Jojoc supergroup          0 2024-07-21 13:31 hdfs://localhost:190
 
 C:\Windows\System32>
 
-Configuration du Cluster
-Ouvrez une invite de commande en tant qu'administrateur.
-java -cp "C:\spark-3.5.1-bin-hadoop3\jars\*" org.apache.spark.deploy.master.Master
-![image](https://github.com/user-attachments/assets/dd933375-ac70-4a8a-9181-80f4bf7acb25)
-
-Pour lancer le worker, vous devez utiliser l'adresse de votre master. Ici, c'est spark://192.168.1.146:7077 mais pour vous, ce sera différent :
-java -cp "C:\spark-3.5.1-bin-hadoop3\jars\*" org.apache.spark.deploy.worker.Worker spark://192.168.1.146:7077
-
-Vérifiez que le worker est bien lancé.
-![image](https://github.com/user-attachments/assets/be4cdfdd-e2a7-4bf1-af9c-f165866f5d78)
 
 Test du Consumer :
 
