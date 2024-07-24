@@ -49,7 +49,6 @@ object Producer extends App {
         lines = reader.readNext()
       }
 
-      // Envoyer les lignes restantes dans le dernier batch
       if (batch.nonEmpty) {
         sendBatch(batch, topic)
         producer.flush()

@@ -33,7 +33,6 @@ object Consumer {
     val kafkaBootstrapServers = "localhost:9092"
     val kafkaTopic = "sparkStreaming"
 
-    // Read messages from Kafka
     val df = spark
       .readStream
       .format("kafka")
@@ -41,16 +40,13 @@ object Consumer {
       .option("subscribe", kafkaTopic)
       .load()
 
-    // Convert messages to DataFrame using the defined schema
     val messages = df.selectExpr("CAST(value AS STRING)").as[String]
     val messageDF = messages.select(from_json(col("value"), messageSchema).as("data")).select("data.*")
 
-    // Apply watermark to handle late data
     val watermarkedDF = messageDF.withWatermark("Date", "10 minutes")
 
     val stopWords = spark.read.textFile("src/main/resources/stopwords-fr.txt").collect().toSet
 
-    // Extract and count words in messages
     val words = watermarkedDF
       .select($"Date", explode(split(regexp_replace(col("Message"), "'", " "), "\\s+")).as("word"))
       .withColumn("word", regexp_replace($"word", "[^\\w]+", ""))
@@ -59,20 +55,17 @@ object Consumer {
       .groupBy("word")
       .count()
 
-    // Count messages by month
     val monthlyCounts = watermarkedDF
       .withColumn("Month", date_format(col("Date"), "yyyy-MM"))
       .groupBy("Month")
       .count()
 
 
-    // Count messages by user
     val userStats = watermarkedDF
       .withColumn("UserID", col("UserID"))
       .groupBy("UserID")
       .count()
 
-    // Use foreachBatch for incremental updates
     val wordCountQuery = words.writeStream
       .outputMode("update")
       .foreachBatch { (batchDF: DataFrame, batchId: Long) =>
