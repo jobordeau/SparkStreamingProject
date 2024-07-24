@@ -8,7 +8,6 @@ object Consumer {
     val checkpointDir = "hdfs://localhost:19000/user/sparkStreaming/checkpoint"
     val resultPath = "hdfs://localhost:19000/user/sparkStreaming/output"
     val monthlyCountPath = "hdfs://localhost:19000/user/sparkStreaming/monthlyCount"
-    val globalStatsPath = "hdfs://localhost:19000/user/sparkStreaming/globalStats"
     val userStatsPath = "hdfs://localhost:19000/user/sparkStreaming/userStats"
 
     val spark = SparkSession.builder
@@ -46,11 +45,13 @@ object Consumer {
     val messages = df.selectExpr("CAST(value AS STRING)").as[String]
     val messageDF = messages.select(from_json(col("value"), messageSchema).as("data")).select("data.*")
 
+    // Apply watermark to handle late data
+    val watermarkedDF = messageDF.withWatermark("Date", "10 minutes")
 
     val stopWords = spark.read.textFile("src/main/resources/stopwords-fr.txt").collect().toSet
 
     // Extract and count words in messages
-    val words = messageDF
+    val words = watermarkedDF
       .select($"Date", explode(split(regexp_replace(col("Message"), "'", " "), "\\s+")).as("word"))
       .withColumn("word", regexp_replace($"word", "[^\\w]+", ""))
       .withColumn("word", lower($"word"))
@@ -59,27 +60,17 @@ object Consumer {
       .count()
 
     // Count messages by month
-    val monthlyCounts = messageDF
+    val monthlyCounts = watermarkedDF
       .withColumn("Month", date_format(col("Date"), "yyyy-MM"))
       .groupBy("Month")
       .count()
 
-    // Count total messages and attachments
-    val globalStats = messageDF
-      .select("ServerID", "Message", "Attachments")
-      .distinct() // Filtrer les doublons potentiels
-      .groupBy("ServerID")
-      .agg(
-        count("Message").as("totalMessages"),
-        count(expr("CASE WHEN Attachments IS NOT NULL AND Attachments != '' THEN 1 END")).as("totalAttachments")
-      )
 
     // Count messages by user
-    val userStats = messageDF
+    val userStats = watermarkedDF
+      .withColumn("UserID", col("UserID"))
       .groupBy("UserID")
-      .agg(
-        count("Message").as("totalMessages")
-      )
+      .count()
 
     // Use foreachBatch for incremental updates
     val wordCountQuery = words.writeStream
@@ -126,38 +117,7 @@ object Consumer {
       .option("checkpointLocation", checkpointDir + "_monthly")
       .start()
 
-    val globalStatsQuery = globalStats.writeStream
-      .outputMode("update")
-      .foreachBatch { (batchDF: DataFrame, batchId: Long) =>
-        if (!DeltaTable.isDeltaTable(spark, globalStatsPath)) {
-          batchDF.write.format("delta").mode("overwrite").save(globalStatsPath)
-        } else {
-          val deltaTable = DeltaTable.forPath(spark, globalStatsPath)
 
-          deltaTable.alias("existing")
-            .merge(
-              batchDF.alias("updates"),
-              "existing.ServerID = updates.ServerID"
-            )
-            .whenMatched
-            .updateExpr(
-              Map(
-                "totalMessages" -> "existing.totalMessages + updates.totalMessages",
-                "totalAttachments" -> "existing.totalAttachments + updates.totalAttachments"
-              )
-            )
-            .whenNotMatched
-            .insertExpr(
-              Map(
-                "ServerID" -> "updates.ServerID",
-                "totalMessages" -> "updates.totalMessages",
-                "totalAttachments" -> "updates.totalAttachments"
-              )
-            )
-            .execute()
-        }
-      }
-      .start()
 
     val userStatsQuery = userStats.writeStream
       .outputMode("update")
@@ -174,14 +134,14 @@ object Consumer {
             .whenMatched
             .updateExpr(
               Map(
-                "totalMessages" -> "existing.totalMessages + updates.totalMessages"
+                "count" -> "existing.count + updates.count"
               )
             )
             .whenNotMatched
             .insertExpr(
               Map(
                 "UserID" -> "updates.UserID",
-                "totalMessages" -> "updates.totalMessages",
+                "count" -> "updates.count",
               )
             )
             .execute()
@@ -190,10 +150,8 @@ object Consumer {
       .option("checkpointLocation", checkpointDir + "_user")
       .start()
 
-
     wordCountQuery.awaitTermination()
     monthlyCountQuery.awaitTermination()
-    globalStatsQuery.awaitTermination()
     userStatsQuery.awaitTermination()
   }
 }

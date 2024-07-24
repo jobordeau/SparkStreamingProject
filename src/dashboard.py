@@ -42,13 +42,11 @@ def load_and_display_data(selected_year=None):
     # Lire les données de Delta Lake
     df = spark.read.format("delta").load(delta_table_path)
     monthly_df = spark.read.format("delta").load(monthly_count_path)
-    global_stats_df = spark.read.format("delta").load(global_stats_path)
     user_stats_df = spark.read.format("delta").load(user_stats_path)
 
     # Créer des vues temporaires
     df.createOrReplaceTempView("delta_real_time_view")
     monthly_df.createOrReplaceTempView("monthly_count_view")
-    global_stats_df.createOrReplaceTempView("global_stats_view")
     user_stats_df.createOrReplaceTempView("user_stats_view")
 
     # Requête SQL pour obtenir les données
@@ -64,27 +62,17 @@ def load_and_display_data(selected_year=None):
     user_stats = spark.sql("""
         SELECT 
             COALESCE(Nickname, `Member Name`, UserID) as User, 
-            totalMessages 
+            count
         FROM user_stats_view 
         LEFT JOIN members_view 
         ON user_stats_view.UserID = members_view.`Member ID`
-        ORDER BY totalMessages DESC LIMIT 3
+        ORDER BY count DESC LIMIT 3
     """)
 
-    global_stats = spark.sql("""
-        SELECT
-            CASE
-                WHEN ServerID = '761246332215623691' THEN '1i3 2020-2021'
-                ELSE '4IABD'
-            END as ServerName,
-            totalMessages
-        FROM global_stats_view
-    """)
 
     # Convertir les DataFrames Spark en Pandas DataFrames
     word_counts_pd = word_counts.toPandas()
     monthly_counts_pd = monthly_counts.toPandas()
-    global_stats_pd = global_stats.toPandas()
     user_stats_pd = user_stats.toPandas()
 
     # Générer un DataFrame avec tous les mois de 1 à 12 pour chaque année
@@ -95,9 +83,6 @@ def load_and_display_data(selected_year=None):
     # Afficher les données avec Streamlit
     st.title("Discord Dashboard")
 
-    # Afficher les statistiques globales
-    st.write("Statistiques globales")
-    st.dataframe(global_stats_pd)
 
     # Afficher le DataFrame sous forme de tableau
     st.write("TOP 10 des mots les plus utilisés")
